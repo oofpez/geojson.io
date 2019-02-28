@@ -564,9 +564,8 @@ module.exports = function fileBar(context) {
 
     function exportIsochrones() {
       if (d3.event) d3.event.preventDefault();
-      var contents =context.data.get('map');
-      meta.saveTapiStopIsochrones(context);
 
+      meta.saveTapiIsochrones(context);
     }
 
     function allProperties(properties, key, value) {

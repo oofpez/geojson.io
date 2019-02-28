@@ -60,6 +60,7 @@ var saveStopIsochronesWithToken = function (token,stopId, data) {
           request.open('POST', 'https://platform.whereismytransport.com/api/isochrones?fixStops=' + stopId , true);
           request.setRequestHeader('Content-type', 'application/json');
           request.setRequestHeader('Authorization', 'Bearer ' + token);
+          request.setRequestHeader('Accept', 'application/json');
           request.addEventListener('load', function () {
               resolve(JSON.parse(this.responseText));
           });

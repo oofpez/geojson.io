@@ -93,35 +93,33 @@ module.exports.wkxString = function(context) {
 
 
 module.exports.getTapiIsochrones = function (context){
-  var input = prompt('Enter your Stop Id');
-  try {
-      var data = tapiClient.getStopIsochrones(input);
-      data.then(result => {
-        context.data.set({ map: result });
-        zoomextent(context);
-        context.data.set({ stopId: input});
-        alert('Isochrone data loaded for stop: ' + input);
 
-      });
-  } catch(e) {
-      console.error(e);
-      alert('Sorry, we were unable to fetch isochrone data');
-  }
+  var input = prompt('Enter your Stop Id');
+  var response = tapiClient.getStopIsochrones(input);
+
+  response.then(result => {
+    context.data.set({ map: result });
+    zoomextent(context);
+    context.data.set({ stopId: input});
+    alert('Isochrone data loaded for stop: ' + input);
+  })
+  .catch(error =>  {
+      console.error(error);
+      alert('Sorry, we were unable to fetch the isochrone data');
+  });
 };
 
-module.exports.saveTapiStopIsochrones = function (context){
-  var input = prompt('Enter the Stop Id');
-  try {
-      var data = tapiClient.saveStopIsochrones(input);
-      data.then(result => {
-        context.data.set({ map: result });
-        zoomextent(context);
-        context.data.set({ stopId: input});
-        alert('Isochrone data saved for stop: ' + input);
+module.exports.saveTapiIsochrones = function (context){
+  var input = context.data.get('stopId');
+  var data = context.data.get('map');
+  var response = tapiClient.saveStopIsochrones(input,data);
 
-      });
-  } catch(e) {
-      console.error(e);
+  response.then(result => {
+    zoomextent(context);
+    alert('Isochrone data saved for stop: ' + input);
+  })
+  .catch(error =>  {
+      console.error(error);
       alert('Sorry, we were unable to save the isochrone data');
-  }
+  });
 };
