@@ -1280,11 +1280,194 @@ function d3_behavior_dragTouchSubject() {
 function d3_behavior_dragMouseSubject() {
   return d3_window;
 }
+// Copies a variable number of methods from source to target.
+d3.rebind = function(target, source) {
+  var i = 1, n = arguments.length, method;
+  while (++i < n) target[method = arguments[i]] = d3_rebind(target, source, source[method]);
+  return target;
+};
+
+// Method is assumed to be a standard D3 getter-setter:
+// If passed with no arguments, gets the value.
+// If passed with arguments, sets the value and returns the target.
+function d3_rebind(target, source, method) {
+  return function() {
+    var value = method.apply(source, arguments);
+    return value === source ? target : value;
+  };
+}
 function d3_functor(v) {
   return typeof v === "function" ? v : function() { return v; };
 }
 
 d3.functor = d3_functor;
+
+d3.dispatch = function() {
+  var dispatch = new d3_dispatch,
+      i = -1,
+      n = arguments.length;
+  while (++i < n) dispatch[arguments[i]] = d3_dispatch_event(dispatch);
+  return dispatch;
+};
+
+function d3_dispatch() {}
+
+d3_dispatch.prototype.on = function(type, listener) {
+  var i = type.indexOf("."),
+      name = "";
+
+  // Extract optional namespace, e.g., "click.foo"
+  if (i >= 0) {
+    name = type.substring(i + 1);
+    type = type.substring(0, i);
+  }
+
+  if (type) return arguments.length < 2
+      ? this[type].on(name)
+      : this[type].on(name, listener);
+
+  if (arguments.length === 2) {
+    if (listener == null) for (type in this) {
+      if (this.hasOwnProperty(type)) this[type].on(name, null);
+    }
+    return this;
+  }
+};
+
+function d3_dispatch_event(dispatch) {
+  var listeners = [],
+      listenerByName = new d3_Map;
+
+  function event() {
+    var z = listeners, // defensive reference
+        i = -1,
+        n = z.length,
+        l;
+    while (++i < n) if (l = z[i].on) l.apply(this, arguments);
+    return dispatch;
+  }
+
+  event.on = function(name, listener) {
+    var l = listenerByName.get(name),
+        i;
+
+    // return the current listener, if any
+    if (arguments.length < 2) return l && l.on;
+
+    // remove the old listener, if any (with copy-on-write)
+    if (l) {
+      l.on = null;
+      listeners = listeners.slice(0, i = listeners.indexOf(l)).concat(listeners.slice(i + 1));
+      listenerByName.remove(name);
+    }
+
+    // add the new listener, if any
+    if (listener) listeners.push(listenerByName.set(name, {on: listener}));
+
+    return dispatch;
+  };
+
+  return event;
+}
+
+d3.event = null;
+
+function d3_eventPreventDefault() {
+  d3.event.preventDefault();
+}
+
+function d3_eventSource() {
+  var e = d3.event, s;
+  while (s = e.sourceEvent) e = s;
+  return e;
+}
+
+// Like d3.dispatch, but for custom events abstracting native UI events. These
+// events have a target component (such as a brush), a target element (such as
+// the svg:g element containing the brush) and the standard arguments `d` (the
+// target element's data) and `i` (the selection index of the target element).
+function d3_eventDispatch(target) {
+  var dispatch = new d3_dispatch,
+      i = 0,
+      n = arguments.length;
+
+  while (++i < n) dispatch[arguments[i]] = d3_dispatch_event(dispatch);
+
+  // Creates a dispatch context for the specified `thiz` (typically, the target
+  // DOM element that received the source event) and `argumentz` (typically, the
+  // data `d` and index `i` of the target element). The returned function can be
+  // used to dispatch an event to any registered listeners; the function takes a
+  // single argument as input, being the event to dispatch. The event must have
+  // a "type" attribute which corresponds to a type registered in the
+  // constructor. This context will automatically populate the "sourceEvent" and
+  // "target" attributes of the event, as well as setting the `d3.event` global
+  // for the duration of the notification.
+  dispatch.of = function(thiz, argumentz) {
+    return function(e1) {
+      try {
+        var e0 =
+        e1.sourceEvent = d3.event;
+        e1.target = target;
+        d3.event = e1;
+        dispatch[e1.type].apply(thiz, argumentz);
+      } finally {
+        d3.event = e0;
+      }
+    };
+  };
+
+  return dispatch;
+}
+
+d3_selectionPrototype.select = function(selector) {
+  var subgroups = [],
+      subgroup,
+      subnode,
+      group,
+      node;
+
+  selector = d3_selection_selector(selector);
+
+  for (var j = -1, m = this.length; ++j < m;) {
+    subgroups.push(subgroup = []);
+    subgroup.parentNode = (group = this[j]).parentNode;
+    for (var i = -1, n = group.length; ++i < n;) {
+      if (node = group[i]) {
+        subgroup.push(subnode = selector.call(node, node.__data__, i, j));
+        if (subnode && "__data__" in node) subnode.__data__ = node.__data__;
+      } else {
+        subgroup.push(null);
+      }
+    }
+  }
+
+  return d3_selection(subgroups);
+};
+
+function d3_selection_selector(selector) {
+  return typeof selector === "function" ? selector : function() {
+    return d3_select(selector, this);
+  };
+}
+// import "../transition/transition";
+
+d3_selectionPrototype.transition = function() {
+  var id = d3_transitionInheritId || ++d3_transitionId,
+      subgroups = [],
+      subgroup,
+      node,
+      transition = d3_transitionInherit || {time: Date.now(), ease: d3_ease_cubicInOut, delay: 0, duration: 250};
+
+  for (var j = -1, m = this.length; ++j < m;) {
+    subgroups.push(subgroup = []);
+    for (var group = this[j], i = -1, n = group.length; ++i < n;) {
+      if (node = group[i]) d3_transitionNode(node, i, id, transition);
+      subgroup.push(node);
+    }
+  }
+
+  return d3_transition(subgroups, id);
+};
 function d3_true() {
   return true;
 }
@@ -2475,6 +2658,27 @@ d3_transitionPrototype.duration = function(value) {
       : (value = Math.max(1, value), function(node) { node.__transition__[id].duration = value; }));
 };
 
+d3_transitionPrototype.each = function(type, listener) {
+  var id = this.id;
+  if (arguments.length < 2) {
+    var inherit = d3_transitionInherit,
+        inheritId = d3_transitionInheritId;
+    d3_transitionInheritId = id;
+    d3_selection_each(this, function(node, i, j) {
+      d3_transitionInherit = node.__transition__[id];
+      type.call(node, node.__data__, i, j);
+    });
+    d3_transitionInherit = inherit;
+    d3_transitionInheritId = inheritId;
+  } else {
+    d3_selection_each(this, function(node) {
+      var transition = node.__transition__[id];
+      (transition.event || (transition.event = d3.dispatch("start", "end"))).on(type, listener);
+    });
+  }
+  return this;
+};
+
 d3_transitionPrototype.transition = function() {
   var id0 = this.id,
       id1 = ++d3_transitionId,
@@ -2913,6 +3117,39 @@ var d3_format_types = d3.map({
 function d3_format_typeDefault(x) {
   return x + "";
 }
+var d3_time = d3.time = {},
+    d3_date = Date;
+
+function d3_date_utc() {
+  this._ = new Date(arguments.length > 1
+      ? Date.UTC.apply(this, arguments)
+      : arguments[0]);
+}
+
+d3_date_utc.prototype = {
+  getDate: function() { return this._.getUTCDate(); },
+  getDay: function() { return this._.getUTCDay(); },
+  getFullYear: function() { return this._.getUTCFullYear(); },
+  getHours: function() { return this._.getUTCHours(); },
+  getMilliseconds: function() { return this._.getUTCMilliseconds(); },
+  getMinutes: function() { return this._.getUTCMinutes(); },
+  getMonth: function() { return this._.getUTCMonth(); },
+  getSeconds: function() { return this._.getUTCSeconds(); },
+  getTime: function() { return this._.getTime(); },
+  getTimezoneOffset: function() { return 0; },
+  valueOf: function() { return this._.valueOf(); },
+  setDate: function() { d3_time_prototype.setUTCDate.apply(this._, arguments); },
+  setDay: function() { d3_time_prototype.setUTCDay.apply(this._, arguments); },
+  setFullYear: function() { d3_time_prototype.setUTCFullYear.apply(this._, arguments); },
+  setHours: function() { d3_time_prototype.setUTCHours.apply(this._, arguments); },
+  setMilliseconds: function() { d3_time_prototype.setUTCMilliseconds.apply(this._, arguments); },
+  setMinutes: function() { d3_time_prototype.setUTCMinutes.apply(this._, arguments); },
+  setMonth: function() { d3_time_prototype.setUTCMonth.apply(this._, arguments); },
+  setSeconds: function() { d3_time_prototype.setUTCSeconds.apply(this._, arguments); },
+  setTime: function() { d3_time_prototype.setTime.apply(this._, arguments); }
+};
+
+var d3_time_prototype = Date.prototype;
 
 function d3_time_interval(local, step, number) {
 
@@ -5772,6 +6009,78 @@ function d3_geo_mercatorProjection(project) {
 (d3.geo.mercator = function() {
   return d3_geo_mercatorProjection(d3_geo_mercator);
 }).raw = d3_geo_mercator;
+
+d3.geo.path = function() {
+  var pointRadius = 4.5,
+      projection,
+      context,
+      projectStream,
+      contextStream,
+      cacheStream;
+
+  function path(object) {
+    if (object) {
+      if (typeof pointRadius === "function") contextStream.pointRadius(+pointRadius.apply(this, arguments));
+      if (!cacheStream || !cacheStream.valid) cacheStream = projectStream(contextStream);
+      d3.geo.stream(object, cacheStream);
+    }
+    return contextStream.result();
+  }
+
+  path.area = function(object) {
+    d3_geo_pathAreaSum = 0;
+    d3.geo.stream(object, projectStream(d3_geo_pathArea));
+    return d3_geo_pathAreaSum;
+  };
+
+  path.centroid = function(object) {
+    d3_geo_centroidX0 = d3_geo_centroidY0 = d3_geo_centroidZ0 =
+    d3_geo_centroidX1 = d3_geo_centroidY1 = d3_geo_centroidZ1 =
+    d3_geo_centroidX2 = d3_geo_centroidY2 = d3_geo_centroidZ2 = 0;
+    d3.geo.stream(object, projectStream(d3_geo_pathCentroid));
+    return d3_geo_centroidZ2 ? [d3_geo_centroidX2 / d3_geo_centroidZ2, d3_geo_centroidY2 / d3_geo_centroidZ2]
+        : d3_geo_centroidZ1 ? [d3_geo_centroidX1 / d3_geo_centroidZ1, d3_geo_centroidY1 / d3_geo_centroidZ1]
+        : d3_geo_centroidZ0 ? [d3_geo_centroidX0 / d3_geo_centroidZ0, d3_geo_centroidY0 / d3_geo_centroidZ0]
+        : [NaN, NaN];
+  };
+
+  path.bounds = function(object) {
+    d3_geo_pathBoundsX1 = d3_geo_pathBoundsY1 = -(d3_geo_pathBoundsX0 = d3_geo_pathBoundsY0 = Infinity);
+    d3.geo.stream(object, projectStream(d3_geo_pathBounds));
+    return [[d3_geo_pathBoundsX0, d3_geo_pathBoundsY0], [d3_geo_pathBoundsX1, d3_geo_pathBoundsY1]];
+  };
+
+  path.projection = function(_) {
+    if (!arguments.length) return projection;
+    projectStream = (projection = _) ? _.stream || d3_geo_pathProjectStream(_) : d3_identity;
+    return reset();
+  };
+
+  path.context = function(_) {
+    if (!arguments.length) return context;
+    contextStream = (context = _) == null ? new d3_geo_pathBuffer : new d3_geo_pathContext(_);
+    if (typeof pointRadius !== "function") contextStream.pointRadius(pointRadius);
+    return reset();
+  };
+
+  path.pointRadius = function(_) {
+    if (!arguments.length) return pointRadius;
+    pointRadius = typeof _ === "function" ? _ : (contextStream.pointRadius(+_), +_);
+    return path;
+  };
+
+  function reset() {
+    cacheStream = null;
+    return path;
+  }
+
+  return path.projection(d3.geo.albersUsa()).context(null);
+};
+
+function d3_geo_pathProjectStream(project) {
+  var resample = d3_geo_resample(function(x, y) { return project([x * d3_degrees, y * d3_degrees]); });
+  return function(stream) { return d3_geo_projectionRadians(resample(stream)); };
+}
   if (typeof define === "function" && define.amd) define(d3);
   else if (typeof module === "object" && module.exports) module.exports = d3;
   this.d3 = d3;

@@ -4,7 +4,8 @@ var escape = require('escape-html'),
     geojsonFlatten = require('geojson-flatten'),
     polyline = require('polyline'),
     wkx = require('wkx'),
-    zoomextent = require('../lib/zoomextent');
+    zoomextent = require('../lib/zoomextent'),
+    tapiClient = require('../jotun/tapiclient.js');
 
 module.exports.adduserlayer = function(context, _url, _name) {
     var url = escape(_url), name = escape(_name);
@@ -88,4 +89,22 @@ module.exports.wkxString = function(context) {
         console.error(e);
         alert('Sorry, we were unable to decode that WKT data');
     }
+};
+
+
+module.exports.tapiStopId = function (context){
+  var input = prompt('Enter your Stop Id');
+  try {
+      var data = tapiClient.getStopIsochrones(input);
+      data.then(result => {
+        context.data.set({ map: result });
+        zoomextent(context);
+        context.data.set({ stopId: input});
+        alert('Isochrone data loaded for stop: ' + input);
+
+      });
+  } catch(e) {
+      console.error(e);
+      alert('Sorry, we were unable to fetch isochrone data');
+  }
 };

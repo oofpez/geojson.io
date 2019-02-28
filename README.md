@@ -49,6 +49,16 @@ Port 8080 is recommended because by default geojson.io will use a
 [prose/gatekeeper](https://github.com/prose/gatekeeper) auth server that redirects
 back to `http://localhost:8080/` for GitHub OAuth.
 
+## With Dockerfile:
+
+make with
+
+    docker build -t jotun .
+
+run using
+
+    docker run -d -p 8080:8080 --name jotun-instance jotun:latest
+
 ## Libraries
 
 This is made up of small reusable chunks:

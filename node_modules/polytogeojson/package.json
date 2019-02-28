@@ -1,0 +1,27 @@
+{
+  "name": "polytogeojson",
+  "version": "0.0.1",
+  "description": "convert poly files to geojson",
+  "main": "lib/polytogeojson.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cschwarz/polytogeojson.git"
+  },
+  "keywords": [
+    "poly",
+    "geojson",
+    "openstreetmap"
+  ],
+  "author": "Christian Schwarz",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cschwarz/polytogeojson/issues"
+  },
+  "homepage": "https://github.com/cschwarz/polytogeojson"
+}

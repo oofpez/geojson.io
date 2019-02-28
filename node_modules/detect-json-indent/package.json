@@ -1,0 +1,28 @@
+{
+  "name": "detect-json-indent",
+  "version": "0.0.0",
+  "description": "detect the indentation of stringified json",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/tmcw/detect-json-indent.git"
+  },
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "keywords": [
+    "json",
+    "indent",
+    "space",
+    "tab"
+  ],
+  "author": "Tom MacWright",
+  "license": "BSD",
+  "dependencies": {
+    "expect.js": "~0.2.0",
+    "mocha": "~1.12.0"
+  }
+}

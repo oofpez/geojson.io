@@ -141,7 +141,13 @@ module.exports = function fileBar(context) {
                     alt: 'Decode and show WKX data',
                     action: function() {
                         meta.wkxString(context);
-                    }
+                      }
+                },  {
+                      title: 'Load Ischrones',
+                      alt: 'Load Isochrones for a stop by Key',
+                      action: function() {
+                          meta.tapiStopId(context);
+                      }
                 }
             ]
         }];
@@ -230,6 +236,13 @@ module.exports = function fileBar(context) {
                 .attr('class', 'filename')
                 .text('unsaved');
         }
+
+        var stopIdDiv = selection.append('div')
+          .attr('class', 'name');
+          var stopIdText = stopIdDiv.append('span')
+              .attr('class', 'filename')
+              .text('none selected');
+
 
         function clickGistSave() {
             if (d3.event) d3.event.preventDefault();
