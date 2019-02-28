@@ -45,6 +45,9 @@ module.exports = function fileBar(context) {
     }, {
         title: 'WKT',
         action: downloadWKT
+    }, {
+        title: 'TAPI Isochrones',
+        action: exportIsochrones
     }];
 
     if (shpSupport) {
@@ -146,7 +149,7 @@ module.exports = function fileBar(context) {
                       title: 'Load Ischrones',
                       alt: 'Load Isochrones for a stop by Key',
                       action: function() {
-                          meta.tapiStopId(context);
+                          meta.getTapiIsochrones(context);
                       }
                 }
             ]
@@ -557,6 +560,13 @@ module.exports = function fileBar(context) {
         saveAs(new Blob([content], {
             type: 'text/plain;charset=utf-8'
         }), 'map.wkt');
+    }
+
+    function exportIsochrones() {
+      if (d3.event) d3.event.preventDefault();
+      var contents =context.data.get('map');
+      meta.saveTapiStopIsochrones(context);
+
     }
 
     function allProperties(properties, key, value) {

@@ -92,7 +92,7 @@ module.exports.wkxString = function(context) {
 };
 
 
-module.exports.tapiStopId = function (context){
+module.exports.getTapiIsochrones = function (context){
   var input = prompt('Enter your Stop Id');
   try {
       var data = tapiClient.getStopIsochrones(input);
@@ -106,5 +106,22 @@ module.exports.tapiStopId = function (context){
   } catch(e) {
       console.error(e);
       alert('Sorry, we were unable to fetch isochrone data');
+  }
+};
+
+module.exports.saveTapiStopIsochrones = function (context){
+  var input = prompt('Enter the Stop Id');
+  try {
+      var data = tapiClient.saveStopIsochrones(input);
+      data.then(result => {
+        context.data.set({ map: result });
+        zoomextent(context);
+        context.data.set({ stopId: input});
+        alert('Isochrone data saved for stop: ' + input);
+
+      });
+  } catch(e) {
+      console.error(e);
+      alert('Sorry, we were unable to save the isochrone data');
   }
 };

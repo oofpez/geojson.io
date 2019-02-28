@@ -53,8 +53,33 @@ var getStopIsochronesWithToken = function (token, stopId) {
   )
 }
 
+var saveStopIsochronesWithToken = function (token,stopId, data) {
+  return new Promise(
+      (resolve, reject) => {
+          var request = new XMLHttpRequest();
+          request.open('POST', 'https://platform.whereismytransport.com/api/isochrones?fixStops=' + stopId , true);
+          request.setRequestHeader('Content-type', 'application/json');
+          request.setRequestHeader('Authorization', 'Bearer ' + token);
+          request.addEventListener('load', function () {
+              resolve(JSON.parse(this.responseText));
+          });
+
+          request.addEventListener("error", error => reject({ message: 'error', err: error }));
+          request.addEventListener("abort", error => reject({ message: 'abort', err: error }));
+          request.send(data);
+      }
+  )
+}
+
 module.exports.getStopIsochrones = function (stopId) {
     return getBearerToken()
             .then(token => getStopIsochronesWithToken(token, stopId))
+            .catch(error => reject(error.message));
+}
+
+
+module.exports.saveStopIsochrones = function (stopId, data) {
+    return getBearerToken()
+            .then(token => saveStopIsochronesWithToken(token,stopId, data))
             .catch(error => reject(error.message));
 }
