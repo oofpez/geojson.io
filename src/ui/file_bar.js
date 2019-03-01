@@ -46,7 +46,7 @@ module.exports = function fileBar(context) {
         title: 'WKT',
         action: downloadWKT
     }, {
-        title: 'TAPI Isochrones',
+        title: 'export TAPI Isochrones',
         action: exportIsochrones
     }];
 
@@ -146,12 +146,19 @@ module.exports = function fileBar(context) {
                         meta.wkxString(context);
                       }
                 },  {
-                      title: 'Load Ischrones',
+                      title: 'Load TAPI Ischrones',
                       alt: 'Load Isochrones for a stop by Key',
                       action: function() {
                           meta.getTapiIsochrones(context);
                       }
+                },  {
+                      title: 'Generate TAPI Ischrones',
+                      alt: 'Generate Isochrones for the current stop',
+                      action: function() {
+                          meta.generateTapiIsochrones(context);
+                      }
                 }
+
             ]
         }];
 
@@ -237,13 +244,13 @@ module.exports = function fileBar(context) {
 
             var filename = name.append('span')
                 .attr('class', 'filename')
-                .text('unsaved');
+                .text('StopId:');
         }
 
         var stopIdDiv = selection.append('div')
           .attr('class', 'name');
           var stopIdText = stopIdDiv.append('span')
-              .attr('class', 'filename')
+              .attr('class', 'stopIdDisplay')
               .text('none selected');
 
 
@@ -564,7 +571,6 @@ module.exports = function fileBar(context) {
 
     function exportIsochrones() {
       if (d3.event) d3.event.preventDefault();
-
       meta.saveTapiIsochrones(context);
     }
 

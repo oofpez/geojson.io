@@ -6,6 +6,7 @@ var escape = require('escape-html'),
     wkx = require('wkx'),
     zoomextent = require('../lib/zoomextent'),
     tapiClient = require('../jotun/tapiclient.js');
+    graphhopperclient= require('../jotun/graphhopperclient.js');
 
 module.exports.adduserlayer = function(context, _url, _name) {
     var url = escape(_url), name = escape(_name);
@@ -99,8 +100,10 @@ module.exports.getTapiIsochrones = function (context){
 
   response.then(result => {
     context.data.set({ map: result });
+
     zoomextent(context);
     context.data.set({ stopId: input});
+    d3.select('span.stopIdDisplay').text(input);
     alert('Isochrone data loaded for stop: ' + input);
   })
   .catch(error =>  {
@@ -109,17 +112,47 @@ module.exports.getTapiIsochrones = function (context){
   });
 };
 
+module.exports.generateTapiIsochrones = function (context){
+
+  var stopId = context.data.get('stopId');
+  if (!input)
+  {
+    alert('you need to have a stopId selected.');
+    return;
+  }
+  var data = context.data.get('map');
+  var pid = data.features[0].properties.pid;
+
+  var result60 = graphhopperclient.generateIsochrone(pid, 60);
+
+  result60.properties.pid = pid;
+  result60.properties.maximumWalkingDurationInSeconds =  "60";
+  result60.properties.isEstimate = false;
+
+  var generated = {
+    type: "FeatureCollection",
+    features: []
+  };
+  generated.features[0] = result60;
+
+  context.data.set({map : generated});
+
+};
+
 module.exports.saveTapiIsochrones = function (context){
   var input = context.data.get('stopId');
+  if (!input){
+    input = '(?)';
+  }
   var data = context.data.get('map');
-  var response = tapiClient.saveStopIsochrones(input,data);
+  var response = tapiClient.saveStopIsochrones(data);
 
   response.then(result => {
     zoomextent(context);
-    alert('Isochrone data saved for stop: ' + input);
+    alert('Saving Isochrone for stop: ' + input + '.\n\n' + JSON.stringify(result, null, 2));
   })
   .catch(error =>  {
       console.error(error);
-      alert('Sorry, we were unable to save the isochrone data');
+      alert('Sorry, we were unable to save the isochrone data. See the console for details.');
   });
 };
