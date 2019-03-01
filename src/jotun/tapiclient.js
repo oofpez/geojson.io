@@ -55,11 +55,11 @@ var getStopIsochronesWithToken = function (token, stopId) {
   )
 }
 
-var getStopsWithToken = function (token, agencyId) {
+var getStopsWithToken = function (token, agencyId,page) {
   return new Promise(
       (resolve, reject) => {
           var request = new XMLHttpRequest();
-          request.open('GET', 'https://platform.whereismytransport.com/api/stops?agencies=' + agencyId , true);
+          request.open('GET', 'https://platform.whereismytransport.com/api/stops?agencies=' + agencyId  + '&offset=' + 100*page, true);
           request.setRequestHeader('Content-type', 'application/json');
           request.setRequestHeader('Authorization', 'Bearer ' + token);
           request.addEventListener('load', function () {
@@ -105,8 +105,8 @@ module.exports.saveStopIsochrones = function ( data) {
             .catch(error => reject(error.message));
 }
 
-module.exports.getStops = function (agencyId) {
+module.exports.getStops = function (agencyId, page) {
   return getBearerToken()
-          .then(token => getStopsWithToken(token, agencyId))
+          .then(token => getStopsWithToken(token, agencyId,page))
           .catch(error => reject(error.message));
 }

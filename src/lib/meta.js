@@ -193,38 +193,96 @@ module.exports.saveTapiIsochrones = function (context){
   });
 };
 
+var StopDataService = function (agencyId){
+    var aggregateData = { isLoaded: false, value: [] };
+    var page = 0;
+
+    var loadData = function(a,p) {
+              var deferred = new Promise(function(resolve,reject){
+                function loadAll() {
+                  tapiClient.getStops(a,p)
+                     .then(function(d) {
+                          console.log("Tapi stops loaded for page" + p + " with result count: " + d.length);
+                          aggregateData.value.push(d);
+                          if(d.length > 0) {
+                             p ++;
+                             loadAll();
+                          }
+                          else {
+                             resolve(aggregateData.value);
+                          }
+                     })
+                }
+                loadAll();
+              });
+
+              return deferred;
+         };
+
+         return {
+          // public, load all data serially
+          loadAllData: function() {
+               var deferred = new Promise(function(resolve,reject){
+
+               loadData(agencyId, page)
+                    .then(function(d) {
+                         console.log('dataService.loadData().then()');
+                         resolve(aggregateData.value)
+                    })
+              });
+              return deferred;
+          },
+          getData: function() {
+               return aggregateData.value;
+          },
+          isDataLoaded: function() {
+               return aggregateData.isLoaded;
+          }
+     }
+
+}
+
+
 module.exports.getTapiStops = function (context){
 
   var input = prompt('Enter your Agency Id');
-  var response = tapiClient.getStops(input);
 
-  response.then(result => {
+  var dataService = StopDataService(input);
 
-    var collection = {
-      type: "FeatureCollection",
-      features: []
-    };
+  var all  = [];
 
-    for (let i = 0; i < result.length; i++){
-      collection.features[i] = {
-          type: "Feature",
-          geometry: result[i].geometry,
-          properties: {
-              name: result[i].name,
-              stopId: result[i].id
-          }
-      }
-    }
+  dataService.loadAllData()
+       .then(function() {
+            console.log('Stops loaded.');
+            all = dataService.getData();
+            var result = all.flat();
 
-    context.data.set({ map: collection });
+            var collection = {
+              type: "FeatureCollection",
+              features: []
+            };
 
-    zoomextent(context);
+            for (let i = 0; i < result.length; i++){
+              collection.features[i] = {
+                  type: "Feature",
+                  geometry: result[i].geometry,
+                  properties: {
+                      name: result[i].name,
+                      stopId: result[i].id
+                  }
+              }
+            }
 
-    context.data.set({ agencyId: input});
-    alert('Stop data loaded for Agency: ' + input);
-  })
-  .catch(error =>  {
-      console.error(error);
-      alert('Sorry, we were unable to fetch the stop data');
-  });
+            context.data.set({ map: collection });
+
+            zoomextent(context);
+
+            context.data.set({ agencyId: input});
+            alert('Stop data loaded for Agency: ' + input);
+
+            console.log(all);
+       }).catch(error =>  {
+           console.error(error);
+           alert('Sorry, we were unable to fetch the stop data');
+       });
 };
