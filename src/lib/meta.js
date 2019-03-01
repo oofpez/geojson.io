@@ -112,10 +112,15 @@ module.exports.getTapiIsochrones = function (context){
   });
 };
 
+var swap = function (xy){
+  let split = xy.split(",");
+  return split[1] + ',' + split[0];
+};
+
 module.exports.generateTapiIsochrones = function (context){
 
   var stopId = context.data.get('stopId');
-  if (!input)
+  if (!stopId)
   {
     alert('you need to have a stopId selected.');
     return;
@@ -123,19 +128,35 @@ module.exports.generateTapiIsochrones = function (context){
   var data = context.data.get('map');
   var pid = data.features[0].properties.pid;
 
-  var result60 = graphhopperclient.generateIsochrone(pid, 60);
+  var distances = [120,180,300,480,780,1260,2040,3300];
+  var results = [];
+  for (var i = 0; i < distances.length; i++){
+    results[i] = graphhopperclient.generateIsochrone(swap(pid), distances[i]);
+  }
 
-  result60.properties.pid = pid;
-  result60.properties.maximumWalkingDurationInSeconds =  "60";
-  result60.properties.isEstimate = false;
+  Promise.all(results)
+  .then(function(values) {
 
-  var generated = {
-    type: "FeatureCollection",
-    features: []
-  };
-  generated.features[0] = result60;
+    var generated = {
+      type: "FeatureCollection",
+      features: []
+    };
 
-  context.data.set({map : generated});
+    for (var r = 0; r < results.length; r++){
+      let f = values[r].polygons[0];
+      f.properties.pid = pid;
+      f.properties.maximumWalkingDurationInSeconds = distances[r].toString();
+      generated.features[r] = f;
+    }
+
+    context.data.set({map : generated});
+
+    alert('Isochrone data generated for stop: ' + stopId);
+  })
+  .catch(error =>  {
+      console.error(error);
+      alert('Sorry, we were unable to generate the isochrone data');
+  });
 
 };
 
