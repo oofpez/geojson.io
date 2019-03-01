@@ -1,6 +1,8 @@
+var config = require('../jotun/tapiconfig.js');
+
 var payload = {
-    'client_id': 'transitapipostman_transitapi',
-    'client_secret': 'wimt85!',
+    'client_id': config.getTapiClientId(),
+    'client_secret': config.getTapiClientSecret(),
     'grant_type': 'client_credentials',
     'scope': 'transportapi:all routethink:locations:read'
 };
@@ -53,6 +55,24 @@ var getStopIsochronesWithToken = function (token, stopId) {
   )
 }
 
+var getStopsWithToken = function (token, agencyId) {
+  return new Promise(
+      (resolve, reject) => {
+          var request = new XMLHttpRequest();
+          request.open('GET', 'https://platform.whereismytransport.com/api/stops?agencies=' + agencyId , true);
+          request.setRequestHeader('Content-type', 'application/json');
+          request.setRequestHeader('Authorization', 'Bearer ' + token);
+          request.addEventListener('load', function () {
+              resolve(JSON.parse(this.responseText));
+          });
+
+          request.addEventListener("error", error => reject({ message: 'error', err: error }));
+          request.addEventListener("abort", error => reject({ message: 'abort', err: error }));
+          request.send();
+      }
+  )
+}
+
 var saveStopIsochronesWithToken = function (token, data) {
   return new Promise(
       (resolve, reject) => {
@@ -83,4 +103,10 @@ module.exports.saveStopIsochrones = function ( data) {
     return getBearerToken()
             .then(token => saveStopIsochronesWithToken(token, data))
             .catch(error => reject(error.message));
+}
+
+module.exports.getStops = function (agencyId) {
+  return getBearerToken()
+          .then(token => getStopsWithToken(token, agencyId))
+          .catch(error => reject(error.message));
 }

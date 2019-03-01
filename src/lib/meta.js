@@ -139,14 +139,29 @@ module.exports.generateTapiIsochrones = function (context){
 
     var generated = {
       type: "FeatureCollection",
-      features: []
+      features: [
+        {
+            type: "Feature",
+            geometry: {
+                type: "Point",
+                coordinates: [
+                    parseFloat(pid.split(',')[0]),
+                    parseFloat(pid.split(',')[1])
+                ]
+            },
+            properties: {
+                pid: pid,
+                stopId: stopId
+            }
+        }
+      ]
     };
 
     for (var r = 0; r < results.length; r++){
       let f = values[r].polygons[0];
       f.properties.pid = pid;
       f.properties.maximumWalkingDurationInSeconds = distances[r].toString();
-      generated.features[r] = f;
+      generated.features[r+1] = f;
     }
 
     context.data.set({map : generated});
@@ -175,5 +190,41 @@ module.exports.saveTapiIsochrones = function (context){
   .catch(error =>  {
       console.error(error);
       alert('Sorry, we were unable to save the isochrone data. See the console for details.');
+  });
+};
+
+module.exports.getTapiStops = function (context){
+
+  var input = prompt('Enter your Agency Id');
+  var response = tapiClient.getStops(input);
+
+  response.then(result => {
+
+    var collection = {
+      type: "FeatureCollection",
+      features: []
+    };
+
+    for (let i = 0; i < result.length; i++){
+      collection.features[i] = {
+          type: "Feature",
+          geometry: result[i].geometry,
+          properties: {
+              name: result[i].name,
+              stopId: result[i].id
+          }
+      }
+    }
+
+    context.data.set({ map: collection });
+
+    zoomextent(context);
+
+    context.data.set({ agencyId: input});
+    alert('Stop data loaded for Agency: ' + input);
+  })
+  .catch(error =>  {
+      console.error(error);
+      alert('Sorry, we were unable to fetch the stop data');
   });
 };

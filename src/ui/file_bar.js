@@ -46,7 +46,7 @@ module.exports = function fileBar(context) {
         title: 'WKT',
         action: downloadWKT
     }, {
-        title: 'export TAPI Isochrones',
+        title: 'Post Current TAPI Isochrones',
         action: exportIsochrones
     }];
 
@@ -156,6 +156,12 @@ module.exports = function fileBar(context) {
                       alt: 'Generate Isochrones for the current stop',
                       action: function() {
                           meta.generateTapiIsochrones(context);
+                      }
+                },  {
+                      title: 'Load TAPI Stops for Agency',
+                      alt: 'Load all the stops for an agency',
+                      action: function() {
+                          meta.getTapiStops(context);
                       }
                 }
 
